@@ -160,6 +160,7 @@ final class StorageService {
         let cover: String
         let duration: Int
         let authorName: String
+        let authorUID: Int
         let hasSubtitle: Bool
         let date: Date?
     }
@@ -256,6 +257,7 @@ final class StorageService {
                     cover: meta?.coverURL ?? "",
                     duration: meta?.duration ?? 0,
                     authorName: meta?.authorName ?? "",
+                    authorUID: meta?.authorUID ?? 0,
                     hasSubtitle: !isNoSub,
                     date: fileDate
                 ))

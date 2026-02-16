@@ -160,43 +160,66 @@ struct FavoritesView: View {
             ForEach(viewModel.videos) { video in
                 let status = viewModel.summaryStatus[video.bvid] ?? .none
 
-                if status == .done,
-                   let relPath = StorageService.shared.findSummaryRelativePath(
-                       title: video.title,
-                       outputSubdir: Constants.favoritesSubdir
-                   ) {
-                    let item = StorageService.SummaryItem(
-                        id: relPath,
-                        title: video.title,
-                        relativePath: relPath,
-                        bvid: video.bvid,
-                        cover: video.coverURL?.absoluteString ?? "",
-                        duration: 0,
-                        authorName: video.upperName,
-                        hasSubtitle: true,
-                        date: nil
-                    )
-                    NavigationLink {
-                        SummaryDetailView(item: item, viewModel: SummaryListViewModel())
-                    } label: {
+                Group {
+                    if status == .done,
+                       let relPath = StorageService.shared.findSummaryRelativePath(
+                           title: video.title,
+                           outputSubdir: Constants.favoritesSubdir
+                       ) {
+                        let item = StorageService.SummaryItem(
+                            id: relPath,
+                            title: video.title,
+                            relativePath: relPath,
+                            bvid: video.bvid,
+                            cover: video.coverURL?.absoluteString ?? "",
+                            duration: 0,
+                            authorName: video.upperName,
+                            authorUID: video.upperMid,
+                            hasSubtitle: true,
+                            date: nil
+                        )
+                        NavigationLink {
+                            SummaryDetailView(item: item, viewModel: SummaryListViewModel())
+                        } label: {
+                            FavoriteVideoRow(
+                                video: video,
+                                status: status,
+                                onSummarize: {}
+                            )
+                        }
+                    } else {
                         FavoriteVideoRow(
                             video: video,
                             status: status,
-                            onSummarize: {}
-                        )
-                    }
-                } else {
-                    FavoriteVideoRow(
-                        video: video,
-                        status: status,
-                        onSummarize: {
-                            Task {
-                                if let cred = auth.credential {
-                                    await viewModel.summarizeSelected(bvids: [video.bvid], credential: cred)
+                            onSummarize: {
+                                Task {
+                                    if let cred = auth.credential {
+                                        await viewModel.summarizeSelected(bvids: [video.bvid], credential: cred)
+                                    }
                                 }
                             }
+                        )
+                    }
+                }
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        Task {
+                            if let cred = auth.credential {
+                                try? await viewModel.unfavorite(bvid: video.bvid, credential: cred)
+                            }
                         }
-                    )
+                    } label: {
+                        Label("取消收藏", systemImage: "star.slash")
+                    }
+                }
+                .onAppear {
+                    if video.id == viewModel.videos.last?.id {
+                        Task {
+                            if let cred = auth.credential {
+                                await viewModel.loadMore(credential: cred)
+                            }
+                        }
+                    }
                 }
             }
 
