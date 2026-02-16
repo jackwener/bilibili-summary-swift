@@ -61,20 +61,7 @@ final class StorageService {
         let seconds = duration % 60
         let durationStr = String(format: "%02d:%02d", minutes, seconds)
 
-        let content = """
-        # \(title)
-
-        **BV号**: \(bvid)
-        **视频链接**: https://www.bilibili.com/video/\(bvid)
-        \(authorLine)**时长**: \(durationStr)
-        **生成时间**: \(generatedAt)
-
-        ---
-
-        ## 📝 摘要
-
-        \(summary)
-        """
+        let content = summary
 
         // Save markdown
         let mdPath = summaryDir.appendingPathComponent("\(safeTitle).md")
