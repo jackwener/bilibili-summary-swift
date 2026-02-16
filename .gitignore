@@ -1,0 +1,41 @@
+# Xcode
+*.xcodeproj/
+xcuserdata/
+*.xcworkspace/
+DerivedData/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+Packages/
+Package.resolved
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# IDE
+.idea/
+.vscode/
+
+# Secrets / credentials — NEVER commit these
+.env
+.env.local
+*.pem
+*.p12
+
+# Output directories (generated content)
+summary/
+ass/
+
+# Antigravity AI agent data
+.gemini/

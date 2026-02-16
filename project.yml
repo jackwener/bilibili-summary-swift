@@ -1,0 +1,32 @@
+name: BiliSummary
+options:
+  bundleIdPrefix: com.jakevin
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: "NO"
+    CODE_SIGNING_ALLOWED: "NO"
+    SWIFT_ENABLE_EXPLICIT_MODULES: "NO"
+    USE_HEADERMAP: "NO"
+
+targets:
+  BiliSummary:
+    type: application
+    platform: iOS
+    sources:
+      - path: BiliSummary
+    settings:
+      base:
+        INFOPLIST_FILE: BiliSummary/Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.jakevin.BiliSummary
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
