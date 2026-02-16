@@ -15,6 +15,9 @@ enum Constants {
     /// B站 homepage (used to detect login success redirect)
     static let bilibiliHome = "https://m.bilibili.com"
 
+    /// Default AI API base URL
+    static let defaultAPIBaseURL = "https://open.bigmodel.cn/api/anthropic"
+
     /// Default AI model
     static let defaultModel = "GLM-4-FlashX-250414"
 

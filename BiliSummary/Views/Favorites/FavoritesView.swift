@@ -78,6 +78,49 @@ struct FavoritesView: View {
                 Divider()
             }
 
+            // Batch summarization progress
+            if viewModel.homeVM.isProcessing {
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("总结进度")
+                            .font(.subheadline.bold())
+                        Spacer()
+                        Text("\(viewModel.homeVM.completedCount)/\(viewModel.homeVM.totalCount)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    ProgressView(value: Double(viewModel.homeVM.completedCount),
+                                 total: Double(max(viewModel.homeVM.totalCount, 1)))
+                        .tint(Color.biliPink)
+
+                    // Show currently processing items
+                    let active = viewModel.homeVM.progressItems.filter { $0.status == .processing }
+                    if !active.isEmpty {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(active) { item in
+                                HStack(spacing: 6) {
+                                    ProgressView()
+                                        .controlSize(.mini)
+                                    Text(item.title)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Text(item.message)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
+
+                Divider()
+            }
+
             // Videos List
             if viewModel.isLoadingVideos && viewModel.videos.isEmpty {
                 Spacer()

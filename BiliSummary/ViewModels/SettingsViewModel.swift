@@ -19,7 +19,7 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Load Settings
 
     func loadSettings() {
-        baseURL = keychain.apiBaseURL ?? ""
+        baseURL = keychain.apiBaseURL ?? Constants.defaultAPIBaseURL
         authToken = keychain.apiAuthToken ?? ""
         selectedModel = keychain.aiModel
     }

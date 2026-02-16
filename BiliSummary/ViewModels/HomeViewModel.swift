@@ -110,25 +110,39 @@ final class HomeViewModel: ObservableObject {
 
     // MARK: - Batch Process
 
+    /// Pending bvids queue — new requests are appended while processing is active
+    private var pendingQueue: [(bvid: String, credential: BiliCredential?, outputSubdir: String)] = []
+    private var isBatchRunning = false
+
     func processBatch(bvids: [String], credential: BiliCredential?, outputSubdir: String, concurrency: Int = Constants.defaultConcurrency) async {
+        // Append new items to queue and progress list
+        let newItems = bvids.map { ProgressItem(bvid: $0, title: $0, status: .pending) }
+        progressItems.append(contentsOf: newItems)
+        totalCount += bvids.count
         isProcessing = true
-        totalCount = bvids.count
-        completedCount = 0
-        progressItems = bvids.map { ProgressItem(bvid: $0, title: $0, status: .pending) }
         errorMessage = nil
+
+        for bvid in bvids {
+            pendingQueue.append((bvid: bvid, credential: credential, outputSubdir: outputSubdir))
+        }
+
+        // If already running a batch loop, just return — the loop will pick up new items
+        guard !isBatchRunning else { return }
+        isBatchRunning = true
 
         await withTaskGroup(of: Void.self) { group in
             var running = 0
 
-            for bvid in bvids {
+            while !pendingQueue.isEmpty {
+                let item = pendingQueue.removeFirst()
+
                 if running >= concurrency {
                     await group.next()
                     running -= 1
                 }
 
                 group.addTask {
-                    await self.processVideo(bvid: bvid, credential: credential, outputSubdir: outputSubdir)
-                    // Brief delay to avoid rate limiting
+                    await self.processVideo(bvid: item.bvid, credential: item.credential, outputSubdir: item.outputSubdir)
                     try? await Task.sleep(for: .milliseconds(500))
                 }
 
@@ -138,6 +152,7 @@ final class HomeViewModel: ObservableObject {
             await group.waitForAll()
         }
 
+        isBatchRunning = false
         isProcessing = false
     }
 
@@ -153,6 +168,8 @@ final class HomeViewModel: ObservableObject {
 
     func reset() {
         isProcessing = false
+        isBatchRunning = false
+        pendingQueue = []
         progressItems = []
         totalCount = 0
         completedCount = 0
