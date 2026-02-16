@@ -105,6 +105,13 @@ final class StorageService {
         findSummaryRelativePath(title: title, outputSubdir: outputSubdir) != nil
     }
 
+    /// Read the content of an existing summary file
+    func readSummary(title: String, outputSubdir: String) -> String? {
+        guard let relPath = findSummaryRelativePath(title: title, outputSubdir: outputSubdir) else { return nil }
+        let fullPath = summaryRoot.appendingPathComponent(relPath)
+        return try? String(contentsOf: fullPath, encoding: .utf8)
+    }
+
     /// Find the relative path to a summary file (for NavigationLink)
     func findSummaryRelativePath(title: String, outputSubdir: String) -> String? {
         let safeTitle = Summary.sanitizeFilename(title)

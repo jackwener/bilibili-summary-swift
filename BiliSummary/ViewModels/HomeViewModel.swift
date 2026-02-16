@@ -41,12 +41,16 @@ final class HomeViewModel: ObservableObject {
             print("📋 [\(bvid)] Title: \(info.title)")
             updateProgress(bvid: bvid, title: info.title, status: .processing, message: "获取字幕...")
 
-            // 2. Check if already exists
+            // 2. Check if already exists (skip if it's a failed/noSubtitle placeholder)
             if storage.summaryExists(title: info.title, outputSubdir: outputSubdir) {
-                print("⏭️ [\(bvid)] Already exists, skipping")
-                updateProgress(bvid: bvid, title: info.title, status: .skipped, message: "已存在")
-                completedCount += 1
-                return
+                let existingContent = storage.readSummary(title: info.title, outputSubdir: outputSubdir) ?? ""
+                if !existingContent.hasPrefix("⚠️") {
+                    print("⏭️ [\(bvid)] Already exists, skipping")
+                    updateProgress(bvid: bvid, title: info.title, status: .skipped, message: "已存在")
+                    completedCount += 1
+                    return
+                }
+                print("🔄 [\(bvid)] Previous attempt failed, retrying...")
             }
 
             // 3. Get subtitles
@@ -114,9 +118,9 @@ final class HomeViewModel: ObservableObject {
     private var pendingQueue: [(bvid: String, credential: BiliCredential?, outputSubdir: String)] = []
     private var isBatchRunning = false
 
-    func processBatch(bvids: [String], credential: BiliCredential?, outputSubdir: String, concurrency: Int = Constants.defaultConcurrency) async {
-        // Append new items to queue and progress list
-        let newItems = bvids.map { ProgressItem(bvid: $0, title: $0, status: .pending) }
+    func processBatch(bvids: [String], credential: BiliCredential?, outputSubdir: String, titles: [String: String] = [:], concurrency: Int = Constants.defaultConcurrency) async {
+        // Append new items to queue and progress list — use known titles if available
+        let newItems = bvids.map { ProgressItem(bvid: $0, title: titles[$0] ?? $0, status: .pending) }
         progressItems.append(contentsOf: newItems)
         totalCount += bvids.count
         isProcessing = true
@@ -133,23 +137,25 @@ final class HomeViewModel: ObservableObject {
         await withTaskGroup(of: Void.self) { group in
             var running = 0
 
-            while !pendingQueue.isEmpty {
-                let item = pendingQueue.removeFirst()
+            // Keep looping while tasks are running OR queue has items
+            // This ensures new items added mid-flight get picked up
+            while !pendingQueue.isEmpty || running > 0 {
+                // Launch tasks up to concurrency limit
+                while !pendingQueue.isEmpty && running < concurrency {
+                    let item = pendingQueue.removeFirst()
+                    group.addTask {
+                        await self.processVideo(bvid: item.bvid, credential: item.credential, outputSubdir: item.outputSubdir)
+                        try? await Task.sleep(for: .milliseconds(200))
+                    }
+                    running += 1
+                }
 
-                if running >= concurrency {
+                // Wait for at least one task to finish (yields to main actor, allowing new items to be enqueued)
+                if running > 0 {
                     await group.next()
                     running -= 1
                 }
-
-                group.addTask {
-                    await self.processVideo(bvid: item.bvid, credential: item.credential, outputSubdir: item.outputSubdir)
-                    try? await Task.sleep(for: .milliseconds(500))
-                }
-
-                running += 1
             }
-
-            await group.waitForAll()
         }
 
         isBatchRunning = false

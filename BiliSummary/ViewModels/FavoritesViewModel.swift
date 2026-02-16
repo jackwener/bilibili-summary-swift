@@ -117,6 +117,7 @@ final class FavoritesViewModel: ObservableObject {
         // Also retry .noSubtitle videos (they may have been from a previous failed run)
         let unsummarized = videos.filter { summaryStatus[$0.bvid] == .none || summaryStatus[$0.bvid] == .noSubtitle }
         let bvids = unsummarized.map(\.bvid)
+        let titles = Dictionary(uniqueKeysWithValues: unsummarized.map { ($0.bvid, $0.title) })
 
         guard !bvids.isEmpty else {
             errorMessage = "所有视频都已总结"
@@ -131,7 +132,8 @@ final class FavoritesViewModel: ObservableObject {
         await homeVM.processBatch(
             bvids: bvids,
             credential: credential,
-            outputSubdir: Constants.favoritesSubdir
+            outputSubdir: Constants.favoritesSubdir,
+            titles: titles
         )
 
         // Refresh status for all processed videos
@@ -141,6 +143,8 @@ final class FavoritesViewModel: ObservableObject {
     // MARK: - Summarize Selected
 
     func summarizeSelected(bvids: [String], credential: BiliCredential) async {
+        // Build titles dict from known videos
+        let titles = Dictionary(uniqueKeysWithValues: videos.filter { bvids.contains($0.bvid) }.map { ($0.bvid, $0.title) })
         for bvid in bvids {
             summaryStatus[bvid] = .processing
         }
@@ -148,7 +152,8 @@ final class FavoritesViewModel: ObservableObject {
         await homeVM.processBatch(
             bvids: bvids,
             credential: credential,
-            outputSubdir: Constants.favoritesSubdir
+            outputSubdir: Constants.favoritesSubdir,
+            titles: titles
         )
 
         // Refresh status for processed videos
