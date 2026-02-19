@@ -23,6 +23,9 @@ struct UserFavoritesView: View {
                 }
             }
             .navigationTitle("UP 主")
+            .refreshable {
+                viewModel.loadFavorites()
+            }
             .onAppear {
                 viewModel.loadFavorites()
             }

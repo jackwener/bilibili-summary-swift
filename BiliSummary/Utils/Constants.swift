@@ -27,6 +27,21 @@ enum Constants {
     /// Max concurrent video processing
     static let defaultConcurrency = 12
 
+    /// AI API max tokens per request
+    static let aiMaxTokens = 8192
+
+    /// AI API max retries on rate limit
+    static let aiMaxRetries = 5
+
+    /// AI API base wait time for exponential backoff (seconds)
+    static let aiRetryBaseWait: TimeInterval = 2
+
+    /// AI API request timeout (seconds)
+    static let aiRequestTimeout: TimeInterval = 120
+
+    /// Delay between processing tasks (milliseconds)
+    static let taskDelayMs: UInt64 = 200
+
     /// Summary output directories
     static let standaloneSubdir = "standalone"
     static let favoritesSubdir = "favorites"

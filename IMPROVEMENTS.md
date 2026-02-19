@@ -1,5 +1,48 @@
 # 项目改进记录
 
+## 2026-02-19 - P2/P3 问题修复 & 用户体验优化
+
+### P2 - 中等问题修复
+
+#### 6. 硬编码的 Magic Numbers
+**问题**：项目中存在多处硬编码的数字（8192, 120, 5, 2, 200）
+**修复方案**：整理到 `Constants.swift` 中统一管理
+**新增常量**：
+- `aiMaxTokens = 8192`
+- `aiMaxRetries = 5`
+- `aiRetryBaseWait = 2` (seconds)
+- `aiRequestTimeout = 120` (seconds)
+- `taskDelayMs = 200` (milliseconds)
+**文件改动**：
+- `BiliSummary/Utils/Constants.swift`
+- `BiliSummary/Services/AIService.swift`
+- `BiliSummary/ViewModels/HomeViewModel.swift`
+
+---
+
+### P3 - 小改进 & 用户体验优化
+
+#### 7. UP 主收藏页面下拉刷新
+**改进**：给 UserFavoritesView 添加了 `.refreshable` 修饰符
+**文件改动**：`BiliSummary/Views/UserFavorites/UserFavoritesView.swift`
+
+#### 8. 总结详情页分享功能
+**改进**：在 SummaryDetailView 右上角添加了系统分享按钮（ShareLink）
+**功能**：可以直接分享总结内容给其他 App
+**文件改动**：`BiliSummary/Views/Summary/SummaryListView.swift`
+
+#### 9. 收藏夹页面 Toast 提示
+**改进**：在 FavoritesView 中添加了和 SummaryDetailView 一样的 Toast 组件
+**功能**：收藏/取消收藏 UP 主时会有提示
+**文件改动**：`BiliSummary/Views/Favorites/FavoritesView.swift`
+
+#### 10. 收藏夹 UP 主收藏按钮状态同步
+**改进**：左滑菜单中的"收藏 UP"按钮现在会显示正确的状态（已收藏/未收藏）
+**功能**：已收藏时显示"取消收藏 UP"和橙色，未收藏时显示"收藏 UP"和蓝色
+**文件改动**：`BiliSummary/Views/Favorites/FavoritesView.swift`
+
+---
+
 ## 2026-02-19 - P0/P1 问题修复
 
 ### P0 - 严重问题修复

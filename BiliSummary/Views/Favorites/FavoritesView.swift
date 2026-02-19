@@ -3,31 +3,67 @@ import SwiftUI
 struct FavoritesView: View {
     @EnvironmentObject var auth: BilibiliAuth
     @StateObject private var viewModel: FavoritesViewModel
+    @StateObject private var userFavVM = UserFavoritesViewModel.shared
+    @State private var showToast = false
+    @State private var toastMessage = ""
 
     init(homeVM: HomeViewModel) {
         _viewModel = StateObject(wrappedValue: FavoritesViewModel(homeVM: homeVM))
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if !auth.isLoggedIn {
-                    notLoggedInView
-                } else if viewModel.isLoadingFolders {
-                    ProgressView("加载收藏夹...")
-                } else {
-                    favoritesContent
+        ZStack(alignment: .top) {
+            NavigationStack {
+                Group {
+                    if !auth.isLoggedIn {
+                        notLoggedInView
+                    } else if viewModel.isLoadingFolders {
+                        ProgressView("加载收藏夹...")
+                    } else {
+                        favoritesContent
+                    }
                 }
-            }
-            .navigationTitle("收藏夹")
-            .onAppear {
-                if auth.isLoggedIn && viewModel.folders.isEmpty {
-                    Task {
-                        if let cred = auth.credential {
-                            await viewModel.loadFolders(credential: cred)
+                .navigationTitle("收藏夹")
+                .onAppear {
+                    if auth.isLoggedIn && viewModel.folders.isEmpty {
+                        Task {
+                            if let cred = auth.credential {
+                                await viewModel.loadFolders(credential: cred)
+                            }
                         }
                     }
                 }
+            }
+
+            if showToast {
+                toastView
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(1)
+            }
+        }
+    }
+
+    // MARK: - Toast
+
+    private var toastView: some View {
+        Text(toastMessage)
+            .font(.subheadline)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.regularMaterial)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
+            .padding(.top, 10)
+    }
+
+    private func showToast(message: String) {
+        toastMessage = message
+        withAnimation(.spring()) {
+            showToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation(.easeOut) {
+                showToast = false
             }
         }
     }
@@ -256,14 +292,23 @@ struct FavoritesView: View {
                     }
 
                     Button {
-                        StorageService.shared.addUserFavorite(
-                            uid: video.upperMid,
-                            name: video.upperName
-                        )
+                        if userFavVM.isFavorited(uid: video.upperMid) {
+                            userFavVM.removeFavorite(uid: video.upperMid)
+                            showToast(message: "已取消收藏 \(video.upperName)")
+                        } else {
+                            userFavVM.addFavorite(
+                                uid: video.upperMid,
+                                name: video.upperName
+                            )
+                            showToast(message: "已收藏 \(video.upperName)")
+                        }
                     } label: {
-                        Label("收藏 UP", systemImage: "person.badge.plus")
+                        Label(
+                            userFavVM.isFavorited(uid: video.upperMid) ? "取消收藏 UP" : "收藏 UP",
+                            systemImage: userFavVM.isFavorited(uid: video.upperMid) ? "person.badge.minus" : "person.badge.plus"
+                        )
                     }
-                    .tint(.blue)
+                    .tint(userFavVM.isFavorited(uid: video.upperMid) ? .orange : .blue)
                 }
                 .onAppear {
                     if video.id == viewModel.videos.last?.id {

@@ -192,6 +192,18 @@ struct SummaryDetailView: View {
                     }
                 }
             }
+
+            if let content = summaryContent {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    ShareLink(
+                        item: content,
+                        subject: Text(item.title),
+                        preview: SharePreview(item.title, image: "doc.text")
+                    ) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+            }
         }
         .task {
             await loadSummary()

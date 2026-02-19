@@ -35,7 +35,7 @@ final class AIService {
 
         let body: [String: Any] = [
             "model": model,
-            "max_tokens": 8192,
+            "max_tokens": Constants.aiMaxTokens,
             "messages": [
                 ["role": "user", "content": prompt]
             ]
@@ -44,8 +44,8 @@ final class AIService {
         let jsonData = try JSONSerialization.data(withJSONObject: body)
 
         // Retry logic
-        let maxRetries = 5
-        let baseWait: TimeInterval = 2
+        let maxRetries = Constants.aiMaxRetries
+        let baseWait: TimeInterval = Constants.aiRetryBaseWait
 
         for attempt in 0..<maxRetries {
             do {
@@ -76,7 +76,7 @@ final class AIService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
         request.setValue(authToken, forHTTPHeaderField: "x-api-key")
-        request.timeoutInterval = 120
+        request.timeoutInterval = Constants.aiRequestTimeout
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

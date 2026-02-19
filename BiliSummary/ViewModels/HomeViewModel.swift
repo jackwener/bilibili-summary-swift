@@ -145,7 +145,7 @@ final class HomeViewModel: ObservableObject {
                     let item = pendingQueue.removeFirst()
                     group.addTask {
                         await self.processVideo(bvid: item.bvid, credential: item.credential, outputSubdir: item.outputSubdir)
-                        try? await Task.sleep(for: .milliseconds(200))
+                        try? await Task.sleep(for: .milliseconds(Constants.taskDelayMs))
                     }
                     running += 1
                 }
