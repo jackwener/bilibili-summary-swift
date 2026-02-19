@@ -328,7 +328,9 @@ final class StorageService {
             return []
         }
         do {
-            return try JSONDecoder().decode([UserFavorite].self, from: data)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode([UserFavorite].self, from: data)
         } catch {
             print("⚠️ Failed to decode user favorites: \(error)")
             return []

@@ -156,7 +156,7 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Link(destination: URL(string: "https://github.com")!) {
+                    Link(destination: URL(string: "https://github.com/jackwener/bilibili-summary-swift")!) {
                         HStack {
                             Label("源代码", systemImage: "chevron.left.forwardslash.chevron.right")
                             Spacer()
