@@ -140,10 +140,13 @@ struct SummaryDetailView: View {
     @State private var isLoading = true
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
             if isLoading {
                 ProgressView("加载中...")
             } else if let content = summaryContent {
+                // Info bar with copyable metadata
+                infoBar
+                Divider()
                 MarkdownWebView(markdown: content)
             } else {
                 VStack(spacing: 16) {
@@ -160,6 +163,103 @@ struct SummaryDetailView: View {
         .task {
             await loadSummary()
         }
+    }
+
+    // MARK: - Info Bar
+
+    private var infoBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                if !item.bvid.isEmpty {
+                    copyableChip(
+                        label: "BV",
+                        value: item.bvid,
+                        icon: "number.circle.fill"
+                    )
+                }
+
+                if !item.authorName.isEmpty {
+                    copyableChip(
+                        label: "UP",
+                        value: item.authorName,
+                        icon: "person.fill"
+                    )
+                }
+
+                if item.authorUID > 0 {
+                    copyableChip(
+                        label: "UID",
+                        value: "\(item.authorUID)",
+                        icon: "person.badge.key.fill"
+                    )
+                }
+
+                if let date = item.date {
+                    chip(
+                        label: "时间",
+                        value: date.formatted(date: .abbreviated, time: .shortened),
+                        icon: "clock.fill"
+                    )
+                }
+
+                if !item.hasSubtitle {
+                    chip(
+                        label: "来源",
+                        value: "ASR",
+                        icon: "waveform"
+                    )
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .background(Color(.systemBackground))
+    }
+
+    // MARK: - Copyable Chip
+
+    private func copyableChip(label: String, value: String, icon: String) -> some View {
+        Button {
+            UIPasteboard.general.string = value
+        } label: {
+            chipContent(label: label, value: value, icon: icon)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                UIPasteboard.general.string = value
+            } label: {
+                Label("复制 \(label)", systemImage: "doc.on.doc")
+            }
+        }
+    }
+
+    // MARK: - Regular Chip
+
+    private func chip(label: String, value: String, icon: String) -> some View {
+        chipContent(label: label, value: value, icon: icon)
+    }
+
+    // MARK: - Chip Content
+
+    private func chipContent(label: String, value: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.caption2)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(value)
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color(.systemGray6))
+        .clipShape(Capsule())
     }
 
     private func loadSummary() async {
