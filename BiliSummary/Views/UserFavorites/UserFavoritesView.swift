@@ -17,7 +17,11 @@ struct UserFavoritesView: View {
                 if viewModel.isLoading {
                     ProgressView("加载中...")
                 } else if viewModel.favorites.isEmpty {
-                    emptyState
+                    EmptyStateView(
+                        icon: "person.2",
+                        title: "还没有收藏 UP 主",
+                        subtitle: "去收藏夹或视频页面收藏一些 UP 主吧！"
+                    )
                 } else {
                     favoritesList
                 }
@@ -29,23 +33,6 @@ struct UserFavoritesView: View {
             .onAppear {
                 viewModel.loadFavorites()
             }
-        }
-    }
-
-    // MARK: - Empty State
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.2")
-                .font(.system(size: 60))
-                .foregroundStyle(.gray)
-            Text("还没有收藏 UP 主")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-            Text("去收藏夹或视频页面收藏一些 UP 主吧！")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
         }
     }
 

@@ -1,5 +1,30 @@
 # 项目改进记录
 
+## 2026-02-19 - 大力度代码重构 & 组件化
+
+### 重构内容
+
+#### 13. 组件化重构 - 抽取通用组件
+**目标**：消除重复代码，提高可维护性
+**新增组件**：
+- `ToastView.swift` - Toast 提示组件 + ViewModifier
+- `EmptyStateView.swift` - 空状态视图组件
+- `ProgressSectionView.swift` - 进度显示组件
+**重构的视图**：
+- `FavoritesView` - 使用 ToastView, EmptyStateView, ProgressSectionView
+- `SummaryListView` - 使用 EmptyStateView
+- `SummaryDetailView` - 使用 ToastView, EmptyStateView
+- `HomeView` - 使用 ProgressSectionView，删除重复的 ProgressSection
+- `UserFavoritesView` - 使用 EmptyStateView
+**删除的重复代码**：约 200+ 行重复的 Toast/EmptyState/Progress 代码
+**文件改动**：
+- 新增：`BiliSummary/Views/Components/ToastView.swift`
+- 新增：`BiliSummary/Views/Components/EmptyStateView.swift`
+- 新增：`BiliSummary/Views/Components/ProgressSectionView.swift`
+- 修改：所有使用这些组件的视图文件
+
+---
+
 ## 2026-02-19 - 总结进度逻辑修复
 
 ### 问题修复

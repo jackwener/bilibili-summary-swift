@@ -4,95 +4,52 @@ struct FavoritesView: View {
     @EnvironmentObject var auth: BilibiliAuth
     @StateObject private var viewModel: FavoritesViewModel
     @StateObject private var userFavVM = UserFavoritesViewModel.shared
-    @State private var showToast = false
-    @State private var toastMessage = ""
+    @StateObject private var toastVM = ToastViewModel()
+    @State private var showLogin = false
 
     init(homeVM: HomeViewModel) {
         _viewModel = StateObject(wrappedValue: FavoritesViewModel(homeVM: homeVM))
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            NavigationStack {
-                Group {
-                    if !auth.isLoggedIn {
-                        notLoggedInView
-                    } else if viewModel.isLoadingFolders {
-                        ProgressView("加载收藏夹...")
-                    } else {
-                        favoritesContent
-                    }
+        NavigationStack {
+            Group {
+                if !auth.isLoggedIn {
+                    notLoggedInView
+                } else if viewModel.isLoadingFolders {
+                    ProgressView("加载收藏夹...")
+                } else {
+                    favoritesContent
                 }
-                .navigationTitle("收藏夹")
-                .onAppear {
-                    if auth.isLoggedIn && viewModel.folders.isEmpty {
-                        Task {
-                            if let cred = auth.credential {
-                                await viewModel.loadFolders(credential: cred)
-                            }
+            }
+            .navigationTitle("收藏夹")
+            .onAppear {
+                if auth.isLoggedIn && viewModel.folders.isEmpty {
+                    Task {
+                        if let cred = auth.credential {
+                            await viewModel.loadFolders(credential: cred)
                         }
                     }
                 }
             }
-
-            if showToast {
-                toastView
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .zIndex(1)
-            }
         }
-    }
-
-    // MARK: - Toast
-
-    private var toastView: some View {
-        Text(toastMessage)
-            .font(.subheadline)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.regularMaterial)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
-            .padding(.top, 10)
-    }
-
-    private func showToast(message: String) {
-        toastMessage = message
-        withAnimation(.spring()) {
-            showToast = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation(.easeOut) {
-                showToast = false
-            }
+        .toast(isPresented: $toastVM.isPresented, message: toastVM.message)
+        .sheet(isPresented: $showLogin) {
+            LoginView()
         }
     }
 
     // MARK: - Not Logged In
 
     private var notLoggedInView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.system(size: 60))
-                .foregroundStyle(.gray)
-            Text("请先登录 Bilibili")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-            Text("登录后可浏览收藏夹并批量总结")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-            Button("去登录") {
-                showLogin = true
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Color.biliPink)
-        }
-        .sheet(isPresented: $showLogin) {
-            LoginView()
-        }
+        EmptyStateView(
+            icon: "person.crop.circle.badge.questionmark",
+            title: "请先登录 Bilibili",
+            subtitle: "登录后可浏览收藏夹并批量总结",
+            actionTitle: "去登录",
+            action: { showLogin = true }
+        )
     }
-
-    @State private var showLogin = false
 
     // MARK: - Favorites Content
 
@@ -116,43 +73,8 @@ struct FavoritesView: View {
 
             // Batch summarization progress
             if viewModel.homeVM.isProcessing {
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("总结进度")
-                            .font(.subheadline.bold())
-                        Spacer()
-                        Text("\(viewModel.homeVM.completedCount)/\(viewModel.homeVM.totalCount)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    ProgressView(value: Double(viewModel.homeVM.completedCount),
-                                 total: Double(max(viewModel.homeVM.totalCount, 1)))
-                        .tint(Color.biliPink)
-
-                    // Show currently processing items
-                    let active = viewModel.homeVM.progressItems.filter { $0.status == .processing }
-                    if !active.isEmpty {
-                        VStack(alignment: .leading, spacing: 2) {
-                            ForEach(active) { item in
-                                HStack(spacing: 6) {
-                                    ProgressView()
-                                        .controlSize(.mini)
-                                    Text(item.title)
-                                        .font(.caption)
-                                        .lineLimit(1)
-                                    Spacer()
-                                    Text(item.message)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(Color(.systemBackground))
+                ProgressSectionView(homeVM: viewModel.homeVM)
+                    .padding(.top, 8)
 
                 Divider()
             }
@@ -163,10 +85,10 @@ struct FavoritesView: View {
                 ProgressView("加载视频...")
                 Spacer()
             } else if viewModel.videos.isEmpty {
-                Spacer()
-                Text("收藏夹为空")
-                    .foregroundStyle(.secondary)
-                Spacer()
+                EmptyStateView(
+                    icon: "star",
+                    title: "收藏夹为空"
+                )
             } else {
                 videosList
             }
@@ -294,13 +216,13 @@ struct FavoritesView: View {
                     Button {
                         if userFavVM.isFavorited(uid: video.upperMid) {
                             userFavVM.removeFavorite(uid: video.upperMid)
-                            showToast(message: "已取消收藏 \(video.upperName)")
+                            toastVM.show("已取消收藏 \(video.upperName)")
                         } else {
                             userFavVM.addFavorite(
                                 uid: video.upperMid,
                                 name: video.upperName
                             )
-                            showToast(message: "已收藏 \(video.upperName)")
+                            toastVM.show("已收藏 \(video.upperName)")
                         }
                     } label: {
                         Label(
