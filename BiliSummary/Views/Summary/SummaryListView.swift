@@ -167,7 +167,7 @@ struct SummaryDetailView: View {
                             toastVM.show("已收藏 \(item.authorName)")
                         }
                     } label: {
-                        Image(systemName: userFavVM.isFavorited(uid: item.authorUID) ? "person.badge.checkmark.fill" : "person.badge.plus")
+                        Image(systemName: userFavVM.isFavorited(uid: item.authorUID) ? "star.fill" : "person.badge.plus")
                             .foregroundStyle(userFavVM.isFavorited(uid: item.authorUID) ? .green : .blue)
                     }
                 }
