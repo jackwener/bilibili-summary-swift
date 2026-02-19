@@ -15,12 +15,12 @@ final class AIService {
             return ("⚠️ 无法获取字幕，无法生成总结", 0)
         }
 
-        guard let baseURL = KeychainHelper.shared.apiBaseURL, !baseURL.isEmpty,
-              let authToken = KeychainHelper.shared.apiAuthToken, !authToken.isEmpty else {
+        guard let baseURL = AppPreferences.shared.apiBaseURL, !baseURL.isEmpty,
+              let authToken = AppPreferences.shared.apiAuthToken, !authToken.isEmpty else {
             throw AIError.notConfigured
         }
 
-        let model = KeychainHelper.shared.aiModel
+        let model = AppPreferences.shared.aiModel
 
         // Build prompt
         let prompt = summarizePrompt
@@ -107,8 +107,8 @@ final class AIService {
     // MARK: - List Models
 
     func listModels() async throws -> [AIModel] {
-        guard let baseURL = KeychainHelper.shared.apiBaseURL, !baseURL.isEmpty,
-              let authToken = KeychainHelper.shared.apiAuthToken, !authToken.isEmpty else {
+        guard let baseURL = AppPreferences.shared.apiBaseURL, !baseURL.isEmpty,
+              let authToken = AppPreferences.shared.apiAuthToken, !authToken.isEmpty else {
             throw AIError.notConfigured
         }
 

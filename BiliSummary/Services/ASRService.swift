@@ -15,8 +15,8 @@ final class ASRService {
 
     /// Download audio from B站 video, split into segments, transcribe via GLM ASR
     func transcribe(bvid: String, credential: BiliCredential?) async throws -> String {
-        guard let baseURL = KeychainHelper.shared.apiBaseURL, !baseURL.isEmpty,
-              let authToken = KeychainHelper.shared.apiAuthToken, !authToken.isEmpty else {
+        guard let baseURL = AppPreferences.shared.apiBaseURL, !baseURL.isEmpty,
+              let authToken = AppPreferences.shared.apiAuthToken, !authToken.isEmpty else {
             throw AIError.notConfigured
         }
 

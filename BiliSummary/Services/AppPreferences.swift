@@ -1,13 +1,13 @@
 import Foundation
 
-// MARK: - Settings Storage (UserDefaults)
+// MARK: - App Preferences (UserDefaults)
 
 /// Manages storage of credentials and API settings using UserDefaults.
 /// Note: Keychain requires code signing entitlements which complicates
 /// simulator builds. For a personal tool, UserDefaults is sufficient
 /// (same security level as Python version's .env.local file).
-final class KeychainHelper {
-    static let shared = KeychainHelper()
+final class AppPreferences {
+    static let shared = AppPreferences()
 
     private let defaults = UserDefaults.standard
     private let prefix = "com.jakevin.BiliSummary."

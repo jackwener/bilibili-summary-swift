@@ -136,27 +136,37 @@ struct SummaryListView: View {
 struct SummaryDetailView: View {
     let item: StorageService.SummaryItem
     @ObservedObject var viewModel: SummaryListViewModel
-    @StateObject private var userFavVM = UserFavoritesViewModel()
+    @ObservedObject private var userFavVM = UserFavoritesViewModel.shared
     @State private var summaryContent: String?
     @State private var isLoading = true
+    @State private var showToast = false
+    @State private var toastMessage = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            if isLoading {
-                ProgressView("加载中...")
-            } else if let content = summaryContent {
-                // Info bar with copyable metadata
-                infoBar
-                Divider()
-                MarkdownWebView(markdown: content)
-            } else {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.orange)
-                    Text("无法加载总结")
-                        .foregroundStyle(.secondary)
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                if isLoading {
+                    ProgressView("加载中...")
+                } else if let content = summaryContent {
+                    // Info bar with copyable metadata
+                    infoBar
+                    Divider()
+                    MarkdownWebView(markdown: content)
+                } else {
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.orange)
+                        Text("无法加载总结")
+                            .foregroundStyle(.secondary)
+                    }
                 }
+            }
+
+            if showToast {
+                toastView
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(1)
             }
         }
         .navigationTitle(item.title)
@@ -167,12 +177,14 @@ struct SummaryDetailView: View {
                     Button {
                         if userFavVM.isFavorited(uid: item.authorUID) {
                             userFavVM.removeFavorite(uid: item.authorUID)
+                            showToast(message: "已取消收藏 \(item.authorName)")
                         } else {
                             userFavVM.addFavorite(
                                 uid: item.authorUID,
                                 name: item.authorName,
                                 avatarURL: nil
                             )
+                            showToast(message: "已收藏 \(item.authorName)")
                         }
                     } label: {
                         Image(systemName: userFavVM.isFavorited(uid: item.authorUID) ? "person.badge.checkmark.fill" : "person.badge.plus")
@@ -183,6 +195,31 @@ struct SummaryDetailView: View {
         }
         .task {
             await loadSummary()
+        }
+    }
+
+    // MARK: - Toast
+
+    private var toastView: some View {
+        Text(toastMessage)
+            .font(.subheadline)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.regularMaterial)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 2)
+            .padding(.top, 10)
+    }
+
+    private func showToast(message: String) {
+        toastMessage = message
+        withAnimation(.spring()) {
+            showToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation(.easeOut) {
+                showToast = false
+            }
         }
     }
 

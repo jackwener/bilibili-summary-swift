@@ -80,19 +80,13 @@ final class FavoritesViewModel: ObservableObject {
 
             // Check summary status for each video
             for video in newVideos {
-                let safe = Summary.sanitizeFilename(video.title)
-                let normalPath = storage.summaryRoot
-                    .appendingPathComponent(Constants.favoritesSubdir)
-                    .appendingPathComponent("\(safe).md")
-                let nosubPath = storage.summaryRoot
-                    .appendingPathComponent(Constants.favoritesSubdir)
-                    .appendingPathComponent("no_subtitle/\(safe).md")
-
-                if FileManager.default.fileExists(atPath: normalPath.path) {
+                let state = storage.summaryState(title: video.title, outputSubdir: Constants.favoritesSubdir)
+                switch state {
+                case .done:
                     summaryStatus[video.bvid] = .done
-                } else if FileManager.default.fileExists(atPath: nosubPath.path) {
+                case .noSubtitle:
                     summaryStatus[video.bvid] = .noSubtitle
-                } else {
+                case .none:
                     summaryStatus[video.bvid] = .none
                 }
             }
@@ -165,19 +159,13 @@ final class FavoritesViewModel: ObservableObject {
     private func refreshStatusForVideos(bvids: [String]) {
         for bvid in bvids {
             guard let video = videos.first(where: { $0.bvid == bvid }) else { continue }
-            let safe = Summary.sanitizeFilename(video.title)
-            let normalPath = storage.summaryRoot
-                .appendingPathComponent(Constants.favoritesSubdir)
-                .appendingPathComponent("\(safe).md")
-            let nosubPath = storage.summaryRoot
-                .appendingPathComponent(Constants.favoritesSubdir)
-                .appendingPathComponent("no_subtitle/\(safe).md")
-
-            if FileManager.default.fileExists(atPath: normalPath.path) {
+            let state = storage.summaryState(title: video.title, outputSubdir: Constants.favoritesSubdir)
+            switch state {
+            case .done:
                 summaryStatus[bvid] = .done
-            } else if FileManager.default.fileExists(atPath: nosubPath.path) {
+            case .noSubtitle:
                 summaryStatus[bvid] = .noSubtitle
-            } else {
+            case .none:
                 // Processing failed without saving any file
                 summaryStatus[bvid] = .none
             }

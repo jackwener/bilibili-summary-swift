@@ -17,7 +17,7 @@ struct MainTabView: View {
                     Label("收藏", systemImage: "star.fill")
                 }
 
-            UserFavoritesView()
+            UserFavoritesView(homeVM: homeVM)
                 .tabItem {
                     Label("UP 主", systemImage: "person.2.fill")
                 }

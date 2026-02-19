@@ -1,15 +1,14 @@
 import SwiftUI
 
 struct UserFavoritesView: View {
-    @StateObject private var viewModel = UserFavoritesViewModel()
+    @StateObject private var viewModel = UserFavoritesViewModel.shared
     @EnvironmentObject var auth: BilibiliAuth
+    let homeVM: HomeViewModel
     @StateObject private var userVM: UserSummaryViewModel
-    @StateObject private var homeVM: HomeViewModel
 
-    init() {
-        let home = HomeViewModel()
-        _homeVM = StateObject(wrappedValue: home)
-        _userVM = StateObject(wrappedValue: UserSummaryViewModel(homeVM: home))
+    init(homeVM: HomeViewModel) {
+        self.homeVM = homeVM
+        _userVM = StateObject(wrappedValue: UserSummaryViewModel(homeVM: homeVM))
     }
 
     var body: some View {

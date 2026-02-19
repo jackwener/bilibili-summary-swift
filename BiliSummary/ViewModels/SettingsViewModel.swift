@@ -13,15 +13,15 @@ final class SettingsViewModel: ObservableObject {
     @Published var saveMessage: String?
     @Published var errorMessage: String?
 
-    private let keychain = KeychainHelper.shared
+    private let preferences = AppPreferences.shared
     private let aiService = AIService.shared
 
     // MARK: - Load Settings
 
     func loadSettings() {
-        baseURL = keychain.apiBaseURL ?? Constants.defaultAPIBaseURL
-        authToken = keychain.apiAuthToken ?? ""
-        selectedModel = keychain.aiModel
+        baseURL = preferences.apiBaseURL ?? Constants.defaultAPIBaseURL
+        authToken = preferences.apiAuthToken ?? ""
+        selectedModel = preferences.aiModel
     }
 
     // MARK: - Save Settings
@@ -31,16 +31,16 @@ final class SettingsViewModel: ObservableObject {
         saveMessage = nil
         errorMessage = nil
 
-        keychain.apiBaseURL = baseURL.isEmpty ? nil : baseURL
-        keychain.apiAuthToken = authToken.isEmpty ? nil : authToken
+        preferences.apiBaseURL = baseURL.isEmpty ? nil : baseURL
+        preferences.apiAuthToken = authToken.isEmpty ? nil : authToken
         if !selectedModel.isEmpty {
-            keychain.aiModel = selectedModel
+            preferences.aiModel = selectedModel
         }
 
         // Verify save by reading back
-        let savedURL = keychain.apiBaseURL ?? "<nil>"
-        let savedToken = keychain.apiAuthToken != nil ? "✅ saved (\(keychain.maskedAuthToken))" : "❌ nil"
-        print("💾 Settings saved — URL: \(savedURL), Token: \(savedToken), Model: \(keychain.aiModel)")
+        let savedURL = preferences.apiBaseURL ?? "<nil>"
+        let savedToken = preferences.apiAuthToken != nil ? "✅ saved (\(preferences.maskedAuthToken))" : "❌ nil"
+        print("💾 Settings saved — URL: \(savedURL), Token: \(savedToken), Model: \(preferences.aiModel)")
 
         isSaving = false
         saveMessage = "设置已保存"
@@ -55,7 +55,7 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Load Models
 
     func loadModels() async {
-        // Auto-save current settings first so Keychain has the latest values
+        // Auto-save current settings first so preferences have the latest values
         saveSettings()
 
         isLoadingModels = true
@@ -80,6 +80,6 @@ final class SettingsViewModel: ObservableObject {
     }
 
     var maskedToken: String {
-        keychain.maskedAuthToken
+        preferences.maskedAuthToken
     }
 }

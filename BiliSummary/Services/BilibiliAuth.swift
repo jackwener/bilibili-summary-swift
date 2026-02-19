@@ -17,7 +17,7 @@ final class BilibiliAuth: NSObject, ObservableObject {
     private override init() {
         super.init()
         // Load saved credential on init
-        if let saved = KeychainHelper.shared.loadCredential(), saved.isValid {
+        if let saved = AppPreferences.shared.loadCredential(), saved.isValid {
             self.credential = saved
             self.isLoggedIn = true
             // Fetch user info in background
@@ -67,8 +67,8 @@ final class BilibiliAuth: NSObject, ObservableObject {
             acTimeValue: acTimeValue
         )
 
-        // Save to keychain
-        KeychainHelper.shared.saveCredential(cred)
+        // Save to preferences
+        AppPreferences.shared.saveCredential(cred)
 
         self.credential = cred
         self.isLoggedIn = true
@@ -100,7 +100,7 @@ final class BilibiliAuth: NSObject, ObservableObject {
         isLoggedIn = false
         userName = ""
         userAvatar = ""
-        KeychainHelper.shared.clearCredential()
+        AppPreferences.shared.clearCredential()
 
         // Clear WebView cookies
         let dataStore = WKWebsiteDataStore.default()

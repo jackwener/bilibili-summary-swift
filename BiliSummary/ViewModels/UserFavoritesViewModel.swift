@@ -4,12 +4,14 @@ import Foundation
 
 @MainActor
 final class UserFavoritesViewModel: ObservableObject {
+    static let shared = UserFavoritesViewModel()
+
     @Published var favorites: [UserFavorite] = []
     @Published var isLoading = false
 
     private let storage = StorageService.shared
 
-    init() {
+    private init() {
         loadFavorites()
     }
 
