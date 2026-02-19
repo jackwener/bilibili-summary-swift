@@ -43,7 +43,6 @@ struct SummaryListView: View {
                             } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: "person.circle.fill")
-                                        .font(.title3)
                                         .foregroundStyle(Color.biliPink)
                                     Text(group.displayName)
                                         .font(.subheadline)
@@ -51,10 +50,7 @@ struct SummaryListView: View {
                                     Spacer()
                                     Text("\(group.items.count)")
                                         .font(.caption)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 3)
-                                        .background(Color(.systemGray5))
-                                        .clipShape(Capsule())
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }
@@ -66,29 +62,26 @@ struct SummaryListView: View {
                 } header: {
                     HStack(spacing: 6) {
                         Image(systemName: category.icon)
-                            .foregroundStyle(Color.biliPink)
                         Text(category.name)
-                            .fontWeight(.semibold)
                         Spacer()
-                        Text("\(category.items.count) 篇")
-                            .font(.caption)
+                        Text("\(category.items.count)")
                             .foregroundStyle(.secondary)
                     }
                     .font(.subheadline)
                 }
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.plain)
     }
 
-    // MARK: - Summary Row
+    // MARK: - Summary Row (matching FavoritesView style)
 
     private func summaryRow(_ item: StorageService.SummaryItem) -> some View {
         NavigationLink {
             SummaryDetailView(item: item, viewModel: viewModel)
         } label: {
             HStack(spacing: 12) {
-                // Thumbnail — matched to FavoritesView size
+                // Thumbnail — same size as FavoritesView (120x68)
                 if !item.cover.isEmpty, let url = URL(string: item.cover) {
                     CachedAsyncImage(url: url, cornerRadius: 8)
                         .frame(width: 120, height: 68)
@@ -104,7 +97,7 @@ struct SummaryListView: View {
                         }
                 }
 
-                // Info
+                // Info — matching FavoritesView layout
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
                         .font(.subheadline)
@@ -112,38 +105,24 @@ struct SummaryListView: View {
 
                     HStack(spacing: 8) {
                         if !item.authorName.isEmpty {
-                            Label(item.authorName, systemImage: "person.fill")
+                            Text(item.authorName)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
 
-                        if let date = item.date {
-                            Text(date.formatted(date: .abbreviated, time: .omitted))
+                        if item.duration > 0 {
+                            Text(formatDuration(item.duration))
                                 .font(.caption)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                         }
                     }
 
-                    // Status tags
-                    HStack(spacing: 6) {
+                    // Status
+                    HStack(spacing: 4) {
                         if !item.hasSubtitle {
                             Label("ASR", systemImage: "waveform")
                                 .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.15))
                                 .foregroundStyle(.orange)
-                                .clipShape(Capsule())
-                        }
-
-                        if !item.bvid.isEmpty {
-                            Text(item.bvid)
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color(.systemGray5))
-                                .foregroundStyle(.secondary)
-                                .clipShape(Capsule())
                         }
                     }
                 }
@@ -159,6 +138,14 @@ struct SummaryListView: View {
                 Label("删除", systemImage: "trash")
             }
         }
+    }
+
+    // MARK: - Helpers
+
+    private func formatDuration(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%d:%02d", m, s)
     }
 }
 
