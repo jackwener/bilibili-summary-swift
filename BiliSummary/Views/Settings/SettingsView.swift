@@ -145,6 +145,17 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    Button(role: .destructive) {
+                        showClearConfirm = true
+                    } label: {
+                        Label("清除所有总结", systemImage: "trash")
+                    }
+                    .confirmationDialog("确定要清除所有总结吗？此操作不可撤销。", isPresented: $showClearConfirm, titleVisibility: .visible) {
+                        Button("清除", role: .destructive) {
+                            try? StorageService.shared.clearAllSummaries()
+                        }
+                    }
                 }
 
                 // About
@@ -178,4 +189,5 @@ struct SettingsView: View {
     }
 
     @State private var showLogin = false
+    @State private var showClearConfirm = false
 }

@@ -253,7 +253,38 @@ final class StorageService {
             }
         }
 
+        // Legacy: privateusers (from Python version)
+        let privateUsersDir = summaryRoot.appendingPathComponent("privateusers")
+        if fileManager.fileExists(atPath: privateUsersDir.path) {
+            var groups: [UserGroup] = []
+            if let contents = try? fileManager.contentsOfDirectory(at: privateUsersDir, includingPropertiesForKeys: nil) {
+                for folder in contents where folder.hasDirectoryPath {
+                    let uid = folder.lastPathComponent
+                    let displayName = readUserDisplayName(uidDir: folder) ?? uid
+                    if let items = scanSummaryDirectory(folder) {
+                        groups.append(UserGroup(id: "p\(uid)", uid: uid, displayName: displayName, items: items))
+                    }
+                }
+            }
+            if !groups.isEmpty {
+                let allItems = groups.flatMap(\.items)
+                categories.append(SummaryCategory(
+                    id: "privateusers", name: "UP 主 (旧)", icon: "person.2.circle",
+                    items: allItems, groups: groups
+                ))
+            }
+        }
+
         return categories
+    }
+
+    // MARK: - Clear All Summaries
+
+    func clearAllSummaries() throws {
+        if fileManager.fileExists(atPath: summaryRoot.path) {
+            try fileManager.removeItem(at: summaryRoot)
+            try fileManager.createDirectory(at: summaryRoot, withIntermediateDirectories: true)
+        }
     }
 
     // MARK: - Save User Meta
@@ -282,7 +313,23 @@ final class StorageService {
                 let isNoSub = fileURL.path.contains("no_subtitle")
                 let meta = readMetaJSON(for: fileURL)
 
-                let relPath = fileURL.path.replacingOccurrences(of: summaryRoot.path + "/", with: "")
+                // Compute relative path robustly
+                let rootPrefix = summaryRoot.path.hasSuffix("/") ? summaryRoot.path : summaryRoot.path + "/"
+                let filePath = fileURL.path
+                let relPath: String
+                if filePath.hasPrefix(rootPrefix) {
+                    relPath = String(filePath.dropFirst(rootPrefix.count))
+                } else {
+                    // Fallback: use path relative to the scan directory
+                    let dirPrefix = dir.path.hasSuffix("/") ? dir.path : dir.path + "/"
+                    if filePath.hasPrefix(dirPrefix) {
+                        // Reconstruct relative path from summaryRoot
+                        let dirRelToRoot = dir.path.hasPrefix(rootPrefix) ? String(dir.path.dropFirst(rootPrefix.count)) : dir.lastPathComponent
+                        relPath = dirRelToRoot + "/" + String(filePath.dropFirst(dirPrefix.count))
+                    } else {
+                        relPath = fileURL.lastPathComponent
+                    }
+                }
 
                 // Get file modification date
                 let fileDate = (try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
