@@ -19,6 +19,9 @@ struct SummaryListView: View {
                 }
             }
             .navigationTitle("浏览")
+            .refreshable {
+                viewModel.loadSummaries()
+            }
             .onAppear {
                 viewModel.loadSummaries()
             }
@@ -38,12 +41,20 @@ struct SummaryListView: View {
                                     summaryRow(item)
                                 }
                             } label: {
-                                HStack {
-                                    Image(systemName: "person.fill")
+                                HStack(spacing: 10) {
+                                    Image(systemName: "person.circle.fill")
+                                        .font(.title3)
+                                        .foregroundStyle(Color.biliPink)
                                     Text(group.displayName)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
                                     Spacer()
                                     Text("\(group.items.count)")
-                                        .foregroundStyle(.secondary)
+                                        .font(.caption)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(Color(.systemGray5))
+                                        .clipShape(Capsule())
                                 }
                             }
                         }
@@ -53,13 +64,17 @@ struct SummaryListView: View {
                         }
                     }
                 } header: {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: category.icon)
+                            .foregroundStyle(Color.biliPink)
                         Text(category.name)
+                            .fontWeight(.semibold)
                         Spacer()
-                        Text("\(category.items.count)")
+                        Text("\(category.items.count) 篇")
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    .font(.subheadline)
                 }
             }
         }
@@ -73,12 +88,23 @@ struct SummaryListView: View {
             SummaryDetailView(item: item, viewModel: viewModel)
         } label: {
             HStack(spacing: 12) {
+                // Thumbnail — matched to FavoritesView size
                 if !item.cover.isEmpty, let url = URL(string: item.cover) {
                     CachedAsyncImage(url: url, cornerRadius: 8)
-                        .frame(width: 80, height: 45)
+                        .frame(width: 120, height: 68)
                         .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(.systemGray5))
+                        .frame(width: 120, height: 68)
+                        .overlay {
+                            Image(systemName: "doc.text")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+                        }
                 }
 
+                // Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
                         .font(.subheadline)
@@ -86,7 +112,7 @@ struct SummaryListView: View {
 
                     HStack(spacing: 8) {
                         if !item.authorName.isEmpty {
-                            Text(item.authorName)
+                            Label(item.authorName, systemImage: "person.fill")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -94,18 +120,35 @@ struct SummaryListView: View {
                         if let date = item.date {
                             Text(date.formatted(date: .abbreviated, time: .omitted))
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.tertiary)
                         }
+                    }
 
+                    // Status tags
+                    HStack(spacing: 6) {
                         if !item.hasSubtitle {
                             Label("ASR", systemImage: "waveform")
                                 .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.15))
                                 .foregroundStyle(.orange)
+                                .clipShape(Capsule())
+                        }
+
+                        if !item.bvid.isEmpty {
+                            Text(item.bvid)
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color(.systemGray5))
+                                .foregroundStyle(.secondary)
+                                .clipShape(Capsule())
                         }
                     }
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
             }
             .padding(.vertical, 4)
         }
@@ -168,7 +211,7 @@ struct SummaryDetailView: View {
                         }
                     } label: {
                         Image(systemName: userFavVM.isFavorited(uid: item.authorUID) ? "star.fill" : "person.badge.plus")
-                            .foregroundStyle(userFavVM.isFavorited(uid: item.authorUID) ? .green : .blue)
+                            .foregroundStyle(userFavVM.isFavorited(uid: item.authorUID) ? .yellow : .blue)
                     }
                 }
             }
@@ -185,7 +228,7 @@ struct SummaryDetailView: View {
                 }
             }
         }
-        .task {
+        .task(id: item.id) {
             await loadSummary()
         }
     }
@@ -246,6 +289,7 @@ struct SummaryDetailView: View {
     private func copyableChip(label: String, value: String, icon: String) -> some View {
         Button {
             UIPasteboard.general.string = value
+            toastVM.show("已复制 \(label): \(value)")
         } label: {
             chipContent(label: label, value: value, icon: icon)
         }
