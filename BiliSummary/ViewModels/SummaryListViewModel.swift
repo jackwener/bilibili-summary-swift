@@ -4,6 +4,8 @@ import Foundation
 
 @MainActor
 final class SummaryListViewModel: ObservableObject {
+    static let shared = SummaryListViewModel()
+
     @Published var categories: [StorageService.SummaryCategory] = []
     @Published var isLoading = false
     @Published var selectedContent: String?

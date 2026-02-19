@@ -66,20 +66,6 @@ final class StorageService {
         try fileManager.createDirectory(at: summaryDir, withIntermediateDirectories: true)
 
         // Generate markdown
-        let generatedAt = Date().formattedForSummary
-        let normalizedCover = coverURL.hasPrefix("//") ? "https:\(coverURL)" : coverURL
-
-        var authorLine = ""
-        if !authorName.isEmpty && authorUID > 0 {
-            authorLine = "**作者**: [\(authorName)](https://space.bilibili.com/\(authorUID))\n"
-        } else if !authorName.isEmpty {
-            authorLine = "**作者**: \(authorName)\n"
-        }
-
-        let minutes = duration / 60
-        let seconds = duration % 60
-        let durationStr = String(format: "%02d:%02d", minutes, seconds)
-
         let content = summary
 
         // Save markdown
@@ -87,6 +73,8 @@ final class StorageService {
         try content.write(to: mdPath, atomically: true, encoding: .utf8)
 
         // Save meta JSON (compatible with Python version)
+        let generatedAt = Date().formattedForSummary
+        let normalizedCover = coverURL.hasPrefix("//") ? "https:\(coverURL)" : coverURL
         let meta = SummaryMeta(
             title: title,
             bvid: bvid,
@@ -334,43 +322,43 @@ final class StorageService {
 
     // MARK: - User Favorites (Thread-Safe)
 
-    func loadUserFavorites() -> [UserFavorite] {
-        favoritesQueue.sync {
-            guard let data = try? Data(contentsOf: userFavoritesURL) else {
-                return []
-            }
-            do {
-                return try JSONDecoder().decode([UserFavorite].self, from: data)
-            } catch {
-                print("⚠️ Failed to decode user favorites: \(error)")
-                return []
-            }
+    // Internal helpers — must only be called from within favoritesQueue
+    private func _unsafeLoadFavorites() -> [UserFavorite] {
+        guard let data = try? Data(contentsOf: userFavoritesURL) else {
+            return []
         }
+        do {
+            return try JSONDecoder().decode([UserFavorite].self, from: data)
+        } catch {
+            print("⚠️ Failed to decode user favorites: \(error)")
+            return []
+        }
+    }
+
+    private func _unsafeSaveFavorites(_ favorites: [UserFavorite]) {
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(favorites)
+            try data.write(to: userFavoritesURL, options: .atomic)
+        } catch {
+            print("⚠️ Failed to save user favorites: \(error)")
+        }
+    }
+
+    // Public thread-safe API
+    func loadUserFavorites() -> [UserFavorite] {
+        favoritesQueue.sync { _unsafeLoadFavorites() }
     }
 
     func saveUserFavorites(_ favorites: [UserFavorite]) {
-        favoritesQueue.sync {
-            do {
-                let encoder = JSONEncoder()
-                encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
-                encoder.dateEncodingStrategy = .iso8601
-                let data = try encoder.encode(favorites)
-                try data.write(to: userFavoritesURL, options: .atomic)
-            } catch {
-                print("⚠️ Failed to save user favorites: \(error)")
-            }
-        }
-    }
-
-    func isUserFavorited(uid: Int) -> Bool {
-        favoritesQueue.sync {
-            loadUserFavorites().contains { $0.uid == uid }
-        }
+        favoritesQueue.sync { _unsafeSaveFavorites(favorites) }
     }
 
     func addUserFavorite(uid: Int, name: String, avatarURL: String? = nil) {
         favoritesQueue.sync {
-            var favorites = loadUserFavorites()
+            var favorites = _unsafeLoadFavorites()
             if !favorites.contains(where: { $0.uid == uid }) {
                 let favorite = UserFavorite(
                     uid: uid,
@@ -380,16 +368,16 @@ final class StorageService {
                 )
                 favorites.append(favorite)
                 favorites.sort { $0.addedAt > $1.addedAt }
-                saveUserFavorites(favorites)
+                _unsafeSaveFavorites(favorites)
             }
         }
     }
 
     func removeUserFavorite(uid: Int) {
         favoritesQueue.sync {
-            var favorites = loadUserFavorites()
+            var favorites = _unsafeLoadFavorites()
             favorites.removeAll { $0.uid == uid }
-            saveUserFavorites(favorites)
+            _unsafeSaveFavorites(favorites)
         }
     }
 }

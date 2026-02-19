@@ -1,5 +1,50 @@
 # 项目改进记录
 
+## 2026-02-20 - Code Review 问题修复
+
+### 🔴 P0 - StorageService 递归死锁修复
+**问题**：`addUserFavorite`、`removeUserFavorite`、`isUserFavorited` 在 `favoritesQueue.sync` 内部调用 `loadUserFavorites()` / `saveUserFavorites()`，而后者也使用 `favoritesQueue.sync`，形成递归 sync → 死锁
+**修复**：拆分出 `_unsafeLoadFavorites()` / `_unsafeSaveFavorites()` 内部方法（不加锁），外层统一加锁；删除有同样问题的 `isUserFavorited` 方法
+**文件改动**：`BiliSummary/Services/StorageService.swift`
+
+### 🟡 P1 - ToastViewModel dismiss 不可取消
+**问题**：`ToastViewModel.show()` 使用 `DispatchQueue.main.asyncAfter`，快速连续触发 toast 时旧的 dismiss timer 会错误关闭新 toast
+**修复**：改用可取消的 `Task` + `dismissTask?.cancel()`
+**文件改动**：`BiliSummary/Views/Components/ToastView.swift`
+
+### 🟡 P1 - @StateObject 包装 singleton 语义不对
+**问题**：`UserFavoritesViewModel.shared` 用 `@StateObject` 包装，但 singleton 生命周期不由 View 管理
+**修复**：改为 `@ObservedObject`，与 `SummaryDetailView` 保持一致
+**文件改动**：
+- `BiliSummary/Views/Favorites/FavoritesView.swift`
+- `BiliSummary/Views/UserFavorites/UserFavoritesView.swift`
+
+### 🟡 P1 - FavoritesView 重复创建 SummaryListViewModel
+**问题**：每次点开详情都 `SummaryListViewModel()`，浪费资源且状态不共享
+**修复**：添加 `SummaryListViewModel.shared` 单例，统一使用
+**文件改动**：
+- `BiliSummary/ViewModels/SummaryListViewModel.swift`
+- `BiliSummary/Views/Favorites/FavoritesView.swift`
+
+### 🟢 P2 - saveSummary 死代码清理
+**问题**：`authorLine`、`durationStr` 等变量计算后未使用
+**修复**：删除未使用的变量，保留实际需要的 `generatedAt` 和 `normalizedCover`
+**文件改动**：`BiliSummary/Services/StorageService.swift`
+
+### 🟢 P2 - summarizePrompt 移入 Constants enum
+**问题**：`summarizePrompt` 是 top-level `let`，不在 `Constants` enum 内
+**修复**：移入 `Constants` enum 作为 `static let`，引用改为 `Constants.summarizePrompt`
+**文件改动**：
+- `BiliSummary/Utils/Constants.swift`
+- `BiliSummary/Services/AIService.swift`
+
+### 🐛 额外 - MarkdownWebView 命名不匹配
+**问题**：文件名 `MarkdownWebView.swift` 内的 struct 叫 `MarkdownContentView`，`SummaryListView` 引用 `MarkdownWebView` 编译失败
+**修复**：添加 `typealias MarkdownWebView = MarkdownContentView`
+**文件改动**：`BiliSummary/Views/Components/MarkdownWebView.swift`
+
+---
+
 ## 2026-02-19 - 大力度代码重构 & 组件化
 
 ### 重构内容

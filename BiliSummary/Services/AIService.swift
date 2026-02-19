@@ -23,7 +23,7 @@ final class AIService {
         let model = AppPreferences.shared.aiModel
 
         // Build prompt
-        let prompt = summarizePrompt
+        let prompt = Constants.summarizePrompt
             .replacingOccurrences(of: "{title}", with: title)
             .replacingOccurrences(of: "{subtitle}", with: subtitle.truncated(to: Constants.maxSubtitleLength))
 

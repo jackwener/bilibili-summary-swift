@@ -39,12 +39,17 @@ final class ToastViewModel: ObservableObject {
     @Published var isPresented = false
     @Published var message = ""
 
+    private var dismissTask: Task<Void, Never>?
+
     func show(_ message: String, duration: TimeInterval = 2) {
         self.message = message
         withAnimation(.spring()) {
             isPresented = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+        dismissTask?.cancel()
+        dismissTask = Task {
+            try? await Task.sleep(for: .seconds(duration))
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut) {
                 isPresented = false
             }

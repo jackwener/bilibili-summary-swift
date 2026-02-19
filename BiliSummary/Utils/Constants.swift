@@ -73,11 +73,10 @@ enum Constants {
     enum Defaults {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
-}
 
-// MARK: - LLM Prompt (identical to Python version)
+    // MARK: - LLM Prompt (identical to Python version)
 
-let summarizePrompt = """
+    static let summarizePrompt = """
 你是一个专业的视频内容分析师。请根据以下视频字幕，生成一份**全面、精细且有条理**的视频笔记。
 
 视频标题: {title}
@@ -103,3 +102,4 @@ let summarizePrompt = """
 
 如果视频包含可操作的建议或方法论，请列出具体的行动步骤。如果视频偏向于分享观点/故事而非方法论，可以省略此部分。
 """
+}

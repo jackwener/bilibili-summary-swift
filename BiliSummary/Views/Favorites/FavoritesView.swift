@@ -3,7 +3,7 @@ import SwiftUI
 struct FavoritesView: View {
     @EnvironmentObject var auth: BilibiliAuth
     @StateObject private var viewModel: FavoritesViewModel
-    @StateObject private var userFavVM = UserFavoritesViewModel.shared
+    @ObservedObject private var userFavVM = UserFavoritesViewModel.shared
     @StateObject private var toastVM = ToastViewModel()
     @State private var showLogin = false
 
@@ -180,7 +180,7 @@ struct FavoritesView: View {
                             date: nil
                         )
                         NavigationLink {
-                            SummaryDetailView(item: item, viewModel: SummaryListViewModel())
+                            SummaryDetailView(item: item, viewModel: SummaryListViewModel.shared)
                         } label: {
                             FavoriteVideoRow(
                                 video: video,

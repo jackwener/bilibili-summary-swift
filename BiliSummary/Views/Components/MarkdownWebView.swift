@@ -111,3 +111,6 @@ struct MarkdownContentView: View {
         return Text(text)
     }
 }
+
+// MARK: - Alias for backward compatibility
+typealias MarkdownWebView = MarkdownContentView
