@@ -17,12 +17,20 @@ final class HomeViewModel: ObservableObject {
     private let asrService = ASRService.shared
     private let storage = StorageService.shared
 
-    struct ProgressItem: Identifiable {
-        let id = UUID()
+    struct ProgressItem: Identifiable, Equatable {
+        let id: String  // Use bvid as id to prevent duplicates
         let bvid: String
         var title: String
         var status: Status
         var message: String = ""
+
+        init(bvid: String, title: String, status: Status, message: String = "") {
+            self.id = bvid
+            self.bvid = bvid
+            self.title = title
+            self.status = status
+            self.message = message
+        }
 
         enum Status {
             case pending, processing, success, skipped, failed, noSubtitle
@@ -119,14 +127,28 @@ final class HomeViewModel: ObservableObject {
     private var isBatchRunning = false
 
     func processBatch(bvids: [String], credential: BiliCredential?, outputSubdir: String, titles: [String: String] = [:], concurrency: Int = Constants.defaultConcurrency) async {
-        // Append new items to queue and progress list — use known titles if available
-        let newItems = bvids.map { ProgressItem(bvid: $0, title: titles[$0] ?? $0, status: .pending) }
-        progressItems.append(contentsOf: newItems)
-        totalCount += bvids.count
+        // Reset state if not already processing
+        if !isProcessing {
+            reset()
+        }
+
         isProcessing = true
         errorMessage = nil
 
+        // Add new items, skipping duplicates
         for bvid in bvids {
+            // Skip if already in progress list
+            if progressItems.contains(where: { $0.bvid == bvid }) {
+                continue
+            }
+
+            let newItem = ProgressItem(
+                bvid: bvid,
+                title: titles[bvid] ?? bvid,
+                status: .pending
+            )
+            progressItems.append(newItem)
+            totalCount += 1
             pendingQueue.append((bvid: bvid, credential: credential, outputSubdir: outputSubdir))
         }
 
@@ -165,7 +187,7 @@ final class HomeViewModel: ObservableObject {
     // MARK: - Progress Update
 
     private func updateProgress(bvid: String, title: String, status: ProgressItem.Status, message: String) {
-        if let index = progressItems.firstIndex(where: { $0.bvid == bvid }) {
+        if let index = progressItems.firstIndex(where: { $0.id == bvid }) {
             progressItems[index].title = title
             progressItems[index].status = status
             progressItems[index].message = message
