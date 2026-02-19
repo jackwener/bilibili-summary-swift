@@ -81,11 +81,6 @@ struct UserFavoritesView: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(.tertiary)
                     }
                     .padding(.vertical, 4)
                 }
