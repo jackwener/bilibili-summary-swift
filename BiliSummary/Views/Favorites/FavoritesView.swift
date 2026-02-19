@@ -254,6 +254,16 @@ struct FavoritesView: View {
                     } label: {
                         Label("取消收藏", systemImage: "star.slash")
                     }
+
+                    Button {
+                        StorageService.shared.addUserFavorite(
+                            uid: video.upperMid,
+                            name: video.upperName
+                        )
+                    } label: {
+                        Label("收藏 UP", systemImage: "person.badge.plus")
+                    }
+                    .tint(.blue)
                 }
                 .onAppear {
                     if video.id == viewModel.videos.last?.id {

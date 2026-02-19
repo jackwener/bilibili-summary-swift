@@ -1,5 +1,16 @@
 import Foundation
 
+// MARK: - User Favorite Model
+
+struct UserFavorite: Codable, Identifiable, Equatable {
+    let uid: Int
+    let name: String
+    let avatarURL: String?
+    let addedAt: Date
+
+    var id: Int { uid }
+}
+
 // MARK: - Storage Service
 
 /// Manages local file storage for summaries and subtitles
@@ -21,6 +32,11 @@ final class StorageService {
     /// ASS subtitles root directory
     var assRoot: URL {
         documentsDirectory.appendingPathComponent("ass")
+    }
+
+    /// User favorites file path
+    var userFavoritesURL: URL {
+        documentsDirectory.appendingPathComponent("user_favorites.json")
     }
 
     private init() {}
@@ -287,5 +303,56 @@ final class StorageService {
             return nil
         }
         return json["name"] as? String
+    }
+
+    // MARK: - User Favorites
+
+    func loadUserFavorites() -> [UserFavorite] {
+        guard let data = try? Data(contentsOf: userFavoritesURL) else {
+            return []
+        }
+        do {
+            return try JSONDecoder().decode([UserFavorite].self, from: data)
+        } catch {
+            print("⚠️ Failed to decode user favorites: \(error)")
+            return []
+        }
+    }
+
+    func saveUserFavorites(_ favorites: [UserFavorite]) {
+        do {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .withoutEscapingSlashes]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(favorites)
+            try data.write(to: userFavoritesURL, options: .atomic)
+        } catch {
+            print("⚠️ Failed to save user favorites: \(error)")
+        }
+    }
+
+    func isUserFavorited(uid: Int) -> Bool {
+        loadUserFavorites().contains { $0.uid == uid }
+    }
+
+    func addUserFavorite(uid: Int, name: String, avatarURL: String? = nil) {
+        var favorites = loadUserFavorites()
+        if !favorites.contains(where: { $0.uid == uid }) {
+            let favorite = UserFavorite(
+                uid: uid,
+                name: name,
+                avatarURL: avatarURL,
+                addedAt: Date()
+            )
+            favorites.append(favorite)
+            favorites.sort { $0.addedAt > $1.addedAt }
+            saveUserFavorites(favorites)
+        }
+    }
+
+    func removeUserFavorite(uid: Int) {
+        var favorites = loadUserFavorites()
+        favorites.removeAll { $0.uid == uid }
+        saveUserFavorites(favorites)
     }
 }

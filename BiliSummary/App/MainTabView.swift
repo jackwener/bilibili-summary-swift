@@ -17,6 +17,11 @@ struct MainTabView: View {
                     Label("收藏", systemImage: "star.fill")
                 }
 
+            UserFavoritesView()
+                .tabItem {
+                    Label("UP 主", systemImage: "person.2.fill")
+                }
+
             SummaryListView(viewModel: summaryListVM)
                 .tabItem {
                     Label("浏览", systemImage: "books.vertical.fill")

@@ -136,6 +136,7 @@ struct SummaryListView: View {
 struct SummaryDetailView: View {
     let item: StorageService.SummaryItem
     @ObservedObject var viewModel: SummaryListViewModel
+    @StateObject private var userFavVM = UserFavoritesViewModel()
     @State private var summaryContent: String?
     @State private var isLoading = true
 
@@ -160,6 +161,26 @@ struct SummaryDetailView: View {
         }
         .navigationTitle(item.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if item.authorUID > 0 {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        if userFavVM.isFavorited(uid: item.authorUID) {
+                            userFavVM.removeFavorite(uid: item.authorUID)
+                        } else {
+                            userFavVM.addFavorite(
+                                uid: item.authorUID,
+                                name: item.authorName,
+                                avatarURL: nil
+                            )
+                        }
+                    } label: {
+                        Image(systemName: userFavVM.isFavorited(uid: item.authorUID) ? "person.badge.checkmark.fill" : "person.badge.plus")
+                            .foregroundStyle(userFavVM.isFavorited(uid: item.authorUID) ? .green : .blue)
+                    }
+                }
+            }
+        }
         .task {
             await loadSummary()
         }
