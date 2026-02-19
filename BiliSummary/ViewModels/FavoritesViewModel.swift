@@ -17,7 +17,17 @@ final class FavoritesViewModel: ObservableObject {
     @Published var summaryStatus: [String: SummaryState] = [:]  // bvid -> status
 
     enum SummaryState {
-        case none, done, noSubtitle, processing
+        case none, done, noSubtitle, processing, failed
+    }
+
+    /// Summary of the last batch result
+    @Published var lastBatchResult: BatchResult?
+
+    struct BatchResult {
+        let total: Int
+        let succeeded: Int
+        let failed: Int
+        let skipped: Int
     }
 
     let homeVM: HomeViewModel
@@ -130,8 +140,9 @@ final class FavoritesViewModel: ObservableObject {
             titles: titles
         )
 
-        // Refresh status for all processed videos
+        // Refresh status and generate batch result
         refreshStatusForVideos(bvids: bvids)
+        generateBatchResult(bvids: bvids)
     }
 
     // MARK: - Summarize Selected
@@ -150,8 +161,9 @@ final class FavoritesViewModel: ObservableObject {
             titles: titles
         )
 
-        // Refresh status for processed videos
+        // Refresh status and generate batch result
         refreshStatusForVideos(bvids: bvids)
+        generateBatchResult(bvids: bvids)
     }
 
     // MARK: - Refresh Status Helper
@@ -166,9 +178,32 @@ final class FavoritesViewModel: ObservableObject {
             case .noSubtitle:
                 summaryStatus[bvid] = .noSubtitle
             case .none:
-                // Processing failed without saving any file
-                summaryStatus[bvid] = .none
+                // Was processing but no file saved — it failed
+                if summaryStatus[bvid] == .processing {
+                    summaryStatus[bvid] = .failed
+                } else {
+                    summaryStatus[bvid] = .none
+                }
             }
+        }
+    }
+
+    private func generateBatchResult(bvids: [String]) {
+        var succeeded = 0, failed = 0, skipped = 0
+        for bvid in bvids {
+            switch summaryStatus[bvid] {
+            case .done: succeeded += 1
+            case .failed, .noSubtitle: failed += 1
+            default: skipped += 1
+            }
+        }
+        if failed > 0 {
+            lastBatchResult = BatchResult(
+                total: bvids.count,
+                succeeded: succeeded,
+                failed: failed,
+                skipped: skipped
+            )
         }
     }
 

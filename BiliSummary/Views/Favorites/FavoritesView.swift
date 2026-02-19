@@ -114,6 +114,12 @@ struct FavoritesView: View {
                 .disabled(viewModel.homeVM.isProcessing)
             }
         }
+        .onChange(of: viewModel.lastBatchResult?.failed) { _, newValue in
+            if let result = viewModel.lastBatchResult, result.failed > 0 {
+                toastVM.show("\(result.succeeded) 个成功，\(result.failed) 个失败（可能触发频率限制）", duration: 4)
+                viewModel.lastBatchResult = nil
+            }
+        }
     }
 
     // MARK: - Folder Chip
@@ -294,10 +300,10 @@ struct FavoriteVideoRow: View {
             Spacer()
 
             // Action — show retry for none, noSubtitle, and failed
-            if status == .none || status == .noSubtitle {
+            if status == .none || status == .noSubtitle || status == .failed {
                 Button(action: onSummarize) {
                     Image(systemName: status == .none ? "sparkles" : "arrow.clockwise")
-                        .foregroundStyle(Color.biliPink)
+                        .foregroundStyle(status == .failed ? .red : Color.biliPink)
                         .padding(8)
                 }
                 .buttonStyle(.plain)
@@ -325,6 +331,10 @@ struct FavoriteVideoRow: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+        case .failed:
+            Label("失败", systemImage: "xmark.circle.fill")
+                .font(.caption2)
+                .foregroundStyle(.red)
         case .none:
             EmptyView()
         }

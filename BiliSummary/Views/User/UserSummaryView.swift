@@ -5,178 +5,305 @@ struct UserSummaryView: View {
     @ObservedObject var viewModel: UserSummaryViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
-            // User Input
-            VStack(alignment: .leading, spacing: 8) {
-                Label("UP 主", systemImage: "person.fill")
-                    .font(.headline)
+        ScrollView {
+            VStack(spacing: 20) {
+                // Search Bar
+                searchSection
 
-                VStack(spacing: 0) {
-                    HStack {
-                        TextField("输入 UID 或 用户名", text: $viewModel.userInput)
-                            .textFieldStyle(.roundedBorder)
-                            .onChange(of: viewModel.userInput) { _, _ in
-                                viewModel.updateSearchSuggestions(credential: auth.credential)
-                            }
-                            .onSubmit {
-                                Task { await viewModel.resolveUser(credential: auth.credential) }
-                            }
-
-                        if viewModel.isSearching {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-
-                        Button {
-                            Task { await viewModel.resolveUser(credential: auth.credential) }
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                                .padding(10)
-                                .background(Color.biliPink)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        .disabled(viewModel.userInput.isEmpty || viewModel.isResolving)
-                    }
-
-                    // Search Suggestions
-                    if viewModel.showSuggestions && !viewModel.searchSuggestions.isEmpty {
-                        Divider()
-                            .padding(.vertical, 8)
-
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(viewModel.searchSuggestions) { user in
-                                Button {
-                                    Task {
-                                        await viewModel.selectSuggestion(user, credential: auth.credential)
-                                    }
-                                } label: {
-                                    HStack(spacing: 12) {
-                                        if let avatarURL = user.avatarURL {
-                                            CachedAsyncImage(url: avatarURL, cornerRadius: 20)
-                                                .frame(width: 40, height: 40)
-                                                .clipped()
-                                        } else {
-                                            Circle()
-                                                .fill(Color.gray.opacity(0.2))
-                                                .frame(width: 40, height: 40)
-                                                .overlay {
-                                                    Image(systemName: "person.fill")
-                                                        .foregroundStyle(.gray)
-                                                }
-                                        }
-
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(user.uname)
-                                                .font(.subheadline)
-
-                                            HStack(spacing: 8) {
-                                                if let fans = user.fans {
-                                                    Label("\(fans) 粉丝", systemImage: "person.2")
-                                                }
-                                                if let videos = user.videos {
-                                                    Label("\(videos) 视频", systemImage: "film")
-                                                }
-                                            }
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-
-                                            if let usign = user.usign, !usign.isEmpty {
-                                                Text(usign)
-                                                    .font(.caption)
-                                                    .foregroundStyle(.tertiary)
-                                                    .lineLimit(1)
-                                            }
-                                        }
-
-                                        Spacer()
-
-                                        Image(systemName: "chevron.right")
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    .padding(.vertical, 8)
-                                }
-                                .buttonStyle(.plain)
-
-                                if user.id != viewModel.searchSuggestions.last?.id {
-                                    Divider()
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 4)
-                    }
+                // Search Suggestions
+                if viewModel.showSuggestions && !viewModel.searchSuggestions.isEmpty {
+                    suggestionsSection
                 }
-                .padding(12)
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                if viewModel.isResolving {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("搜索中...")
+                // Resolved User Card
+                if let uid = viewModel.resolvedUID {
+                    resolvedUserCard(uid: uid)
+                }
+
+                // Error
+                if let error = viewModel.errorMessage {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    .font(.caption)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.orange.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
 
-                if let uid = viewModel.resolvedUID {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text("\(viewModel.resolvedName) (UID: \(String(uid)))")
-                            .font(.subheadline)
+                // Video Count + Start Button (only when user resolved)
+                if viewModel.resolvedUID != nil {
+                    actionSection
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
+
+    // MARK: - Search Section
+
+    private var searchSection: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+
+                TextField("输入 UID 或用户名搜索", text: $viewModel.userInput)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .onChange(of: viewModel.userInput) { _, _ in
+                        viewModel.updateSearchSuggestions(credential: auth.credential)
+                    }
+                    .onSubmit {
+                        Task { await viewModel.resolveUser(credential: auth.credential) }
+                    }
+
+                if viewModel.isSearching {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                }
+
+                if !viewModel.userInput.isEmpty {
+                    Button {
+                        viewModel.userInput = ""
+                        viewModel.searchSuggestions = []
+                        viewModel.showSuggestions = false
+                        viewModel.resolvedUID = nil
+                        viewModel.resolvedName = ""
+                        viewModel.errorMessage = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
                     }
                 }
+            }
+            .padding(12)
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+            Button {
+                Task { await viewModel.resolveUser(credential: auth.credential) }
+            } label: {
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(viewModel.userInput.isEmpty ? .gray : Color.biliPink)
+            }
+            .disabled(viewModel.userInput.isEmpty || viewModel.isResolving)
+        }
+    }
+
+    // MARK: - Suggestions Section
+
+    private var suggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("搜索结果")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(viewModel.searchSuggestions.count) 个 UP 主")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+
+            LazyVStack(spacing: 0) {
+                ForEach(viewModel.searchSuggestions) { user in
+                    Button {
+                        Task {
+                            await viewModel.selectSuggestion(user, credential: auth.credential)
+                        }
+                    } label: {
+                        suggestionRow(user)
+                    }
+                    .buttonStyle(.plain)
+
+                    if user.id != viewModel.searchSuggestions.last?.id {
+                        Divider()
+                            .padding(.leading, 68)
+                    }
+                }
+            }
+        }
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Suggestion Row
+
+    private func suggestionRow(_ user: SearchUserItem) -> some View {
+        HStack(spacing: 12) {
+            // Avatar
+            if let avatarURL = user.avatarURL {
+                CachedAsyncImage(url: avatarURL, cornerRadius: 22)
+                    .frame(width: 44, height: 44)
+                    .clipped()
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 44, height: 44)
+                    .overlay {
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(.gray)
+                    }
+            }
+
+            // Info
+            VStack(alignment: .leading, spacing: 3) {
+                Text(user.uname)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                HStack(spacing: 10) {
+                    if let fans = user.fans {
+                        Label(formatCount(fans), systemImage: "person.2")
+                    }
+                    if let videos = user.videos {
+                        Label("\(videos) 视频", systemImage: "film")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                if let usign = user.usign, !usign.isEmpty {
+                    Text(usign)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
                 }
             }
 
-            // Video Count
-            VStack(alignment: .leading, spacing: 8) {
-                Label("视频数量", systemImage: "film.stack")
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.quaternary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Resolved User Card
+
+    private func resolvedUserCard(uid: Int) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.green)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(viewModel.resolvedName)
                     .font(.headline)
-
-                HStack {
-                    TextField("数量", value: $viewModel.videoCount, format: .number)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
-
-                    Text("个视频")
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-                }
+                Text("UID: \(String(uid))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
-            // Start Button
+            Spacer()
+
+            // Favorite button
+            Button {
+                let favVM = UserFavoritesViewModel.shared
+                if favVM.isFavorited(uid: uid) {
+                    favVM.removeFavorite(uid: uid)
+                } else {
+                    favVM.addFavorite(uid: uid, name: viewModel.resolvedName)
+                }
+            } label: {
+                let isFav = UserFavoritesViewModel.shared.isFavorited(uid: uid)
+                Image(systemName: isFav ? "heart.fill" : "heart")
+                    .foregroundStyle(isFav ? .red : .secondary)
+                    .padding(8)
+                    .background(Color(.systemGray6))
+                    .clipShape(Circle())
+            }
+        }
+        .padding()
+        .background(Color.green.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Action Section
+
+    private var actionSection: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Label("视频数量", systemImage: "film.stack")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Button {
+                        if viewModel.videoCount > 1 { viewModel.videoCount -= 1 }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("\(viewModel.videoCount)")
+                        .font(.headline)
+                        .monospacedDigit()
+                        .frame(minWidth: 30)
+
+                    Button {
+                        viewModel.videoCount += 1
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(Color.biliPink)
+                    }
+                }
+                .font(.title3)
+            }
+            .padding()
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+
             Button {
                 Task {
                     await viewModel.startSummarize(credential: auth.credential)
                 }
             } label: {
-                HStack {
-                    Image(systemName: "sparkles")
-                    Text("开始总结")
+                HStack(spacing: 8) {
+                    if viewModel.homeVM.isProcessing {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "sparkles")
+                    }
+                    Text(viewModel.homeVM.isProcessing ? "处理中..." : "开始总结")
                 }
+                .font(.headline)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, 16)
                 .background(
-                    viewModel.resolvedUID == nil || viewModel.homeVM.isProcessing
-                        ? Color.gray.opacity(0.3)
+                    viewModel.homeVM.isProcessing
+                        ? Color.gray.opacity(0.4)
                         : Color.biliPink
                 )
                 .foregroundStyle(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-                .font(.headline)
             }
             .disabled(viewModel.resolvedUID == nil || viewModel.homeVM.isProcessing)
         }
-        .padding(.horizontal)
+    }
+
+    // MARK: - Helpers
+
+    private func formatCount(_ count: Int) -> String {
+        if count >= 10000 {
+            return String(format: "%.1f 万", Double(count) / 10000)
+        }
+        return "\(count) 粉丝"
     }
 }
