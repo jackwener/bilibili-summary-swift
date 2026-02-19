@@ -158,6 +158,7 @@ struct SummaryDetailView: View {
     @StateObject private var toastVM = ToastViewModel()
     @State private var summaryContent: String?
     @State private var isLoading = true
+    @State private var loadError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -172,10 +173,23 @@ struct SummaryDetailView: View {
                         .padding()
                 }
             } else {
-                EmptyStateView(
-                    icon: "exclamationmark.triangle",
-                    title: "无法加载总结"
-                )
+                VStack(spacing: 12) {
+                    EmptyStateView(
+                        icon: "exclamationmark.triangle",
+                        title: "无法加载总结"
+                    )
+                    // Debug info
+                    Text("路径: \(item.relativePath)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal)
+                    if let err = loadError {
+                        Text("错误: \(err)")
+                            .font(.caption2)
+                            .foregroundStyle(.red)
+                            .padding(.horizontal)
+                    }
+                }
             }
         }
         .navigationTitle(item.title)
@@ -320,7 +334,19 @@ struct SummaryDetailView: View {
 
     private func loadSummary() async {
         isLoading = true
-        summaryContent = viewModel.readSummary(path: item.relativePath)
+        loadError = nil
+        let storage = StorageService.shared
+        let fullPath = storage.summaryRoot.appendingPathComponent(item.relativePath)
+        let exists = FileManager.default.fileExists(atPath: fullPath.path)
+        if exists {
+            do {
+                summaryContent = try String(contentsOf: fullPath, encoding: .utf8)
+            } catch {
+                loadError = "读取失败: \(error.localizedDescription)\n路径: \(fullPath.path)"
+            }
+        } else {
+            loadError = "文件不存在\nfullPath: \(fullPath.path)\nsummaryRoot: \(storage.summaryRoot.path)"
+        }
         isLoading = false
     }
 }
