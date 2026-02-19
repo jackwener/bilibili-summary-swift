@@ -1,5 +1,62 @@
 # 项目改进记录
 
+## 2026-02-20 - UX 改进 & Bug 修复
+
+### 🔴 P0 - 浏览 tab "无法加载总结" 修复
+**问题**：`scanSummaryDirectory` 使用 `fileURL.path.replacingOccurrences(of: summaryRoot.path + "/")` 计算相对路径，当 URL path 形式不完全匹配时替换失败，导致 `relativePath` 保留前导 `/`（如 `/privateusers/247896412/...`），`appendingPathComponent` 生成双斜杠路径，文件找不到
+**修复**：改用 robust `hasPrefix` + `dropFirst` 计算相对路径；同时添加 `privateusers/` 旧目录（Python 版本遗留）的扫描支持
+**文件改动**：`BiliSummary/Services/StorageService.swift`
+
+### 🟡 P1 - Rate Limiting 静默失败
+**问题**：收藏夹 tab 点击星号总结视频时，API rate limiting 导致失败但无任何反馈，用户以为按钮没反应
+**修复**：
+- `FavoritesViewModel.SummaryState` 新增 `failed` 状态
+- 批量总结完成后弹 toast 显示成功/失败计数
+- 失败视频显示红色 ❌ 标签 + 重试按钮
+**文件改动**：
+- `BiliSummary/ViewModels/FavoritesViewModel.swift`（新增 `BatchResult` 结构体）
+- `BiliSummary/Views/Favorites/FavoritesView.swift`（toast + 失败状态 UI）
+
+### 🟡 P1 - UP 主搜索页重新设计
+**问题**：搜索结果列表无 `ScrollView`、布局不美观、无清除按钮
+**修复**：整体重写 `UserSummaryView`：
+- `ScrollView` + `.scrollDismissesKeyboard(.interactively)`
+- 搜索栏带清除按钮和搜索进度指示器
+- 搜索结果用 `LazyVStack`，粉丝数自动格式化（万）
+- 选中用户显示卡片 + 一键收藏
+- 视频数量用 ＋/－ stepper 替代文本输入
+- 开始按钮显示 loading 状态
+**文件改动**：`BiliSummary/Views/User/UserSummaryView.swift`
+
+### 🟡 P1 - 浏览 tab 样式统一
+**问题**：浏览 tab 用 `.insetGrouped` listStyle（有左右间距），与收藏夹 tab 的 `.plain` 贴边风格不一致
+**修复**：改为 `.plain` listStyle，行布局匹配收藏夹（120×68 缩略图 + 标题 + UP 主 + 时长），缺封面时显示占位图标，添加下拉刷新，`.task(id:)` 修复导航时 stale 内容
+**文件改动**：`BiliSummary/Views/Summary/SummaryListView.swift`
+
+### 🟢 P2 - UP 主 tab 双箭头
+**问题**：`UserFavoritesView` 行内手动添加了 `chevron.right`，与 `NavigationLink` 自带的 disclosure 箭头重复
+**修复**：删除手动 `chevron.right`
+**文件改动**：`BiliSummary/Views/UserFavorites/UserFavoritesView.swift`
+
+### 🟢 P2 - 无效 SF Symbol
+**问题**：`person.badge.checkmark.fill` 不存在于系统 symbol set，控制台报错
+**修复**：改为 `star.fill`
+**文件改动**：`BiliSummary/Views/Summary/SummaryListView.swift`
+
+### 🟢 P2 - 设置页新增清除缓存
+**新增**：设置页"存储"区域添加"清除所有总结"按钮，带确认弹窗
+**文件改动**：
+- `BiliSummary/Services/StorageService.swift`（新增 `clearAllSummaries()` 方法）
+- `BiliSummary/Views/Settings/SettingsView.swift`（按钮 + 确认对话框）
+
+### 🟢 P2 - Debug prints 清理
+**修复**：移除 `StorageService.readSummary` 和 `SummaryListView.loadSummary` 中的 debug print 语句
+**文件改动**：
+- `BiliSummary/Services/StorageService.swift`
+- `BiliSummary/Views/Summary/SummaryListView.swift`
+
+---
+
 ## 2026-02-20 - Code Review 问题修复
 
 ### 🔴 P0 - StorageService 递归死锁修复
