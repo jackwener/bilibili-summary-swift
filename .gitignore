@@ -34,7 +34,7 @@ Package.resolved
 *.p12
 
 # Output directories (generated content)
-summary/
+/summary/
 ass/
 
 # Antigravity AI agent data
