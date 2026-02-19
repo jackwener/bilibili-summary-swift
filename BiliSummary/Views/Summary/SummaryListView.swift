@@ -137,7 +137,10 @@ struct SummaryDetailView: View {
                 // Info bar with copyable metadata
                 infoBar
                 Divider()
-                MarkdownWebView(markdown: content)
+                ScrollView {
+                    MarkdownWebView(markdown: content)
+                        .padding()
+                }
             } else {
                 EmptyStateView(
                     icon: "exclamationmark.triangle",
