@@ -113,8 +113,8 @@ final class BilibiliAPI {
 
     // MARK: - Search User
 
-    /// Search for a user by name using the search suggest API (no WBI needed)
-    func searchUser(name: String, credential: BiliCredential? = nil) async throws -> Int? {
+    /// Search for users by name (returns full list)
+    func searchUsers(name: String, credential: BiliCredential? = nil) async throws -> [SearchUserItem] {
         // Use the general search API with credential to avoid 412
         let data: SearchResultWrapper = try await client.biliRequest(
             path: "/x/web-interface/wbi/search/type",
@@ -124,7 +124,13 @@ final class BilibiliAPI {
             ],
             credential: credential
         )
-        return data.result?.first?.mid
+        return data.result ?? []
+    }
+
+    /// Search for a user by name using the search suggest API (no WBI needed)
+    @available(*, deprecated, message: "Use searchUsers instead")
+    func searchUser(name: String, credential: BiliCredential? = nil) async throws -> Int? {
+        try await searchUsers(name: name, credential: credential).first?.mid
     }
 
     // MARK: - Favorites

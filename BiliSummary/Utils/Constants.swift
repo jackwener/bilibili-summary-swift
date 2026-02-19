@@ -42,6 +42,12 @@ enum Constants {
     /// Delay between processing tasks (milliseconds)
     static let taskDelayMs: UInt64 = 200
 
+    /// Search debounce delay (milliseconds)
+    static let searchDebounceMs: UInt64 = 300
+
+    /// Minimum characters to trigger search suggestions
+    static let searchMinChars = 2
+
     /// Summary output directories
     static let standaloneSubdir = "standalone"
     static let favoritesSubdir = "favorites"

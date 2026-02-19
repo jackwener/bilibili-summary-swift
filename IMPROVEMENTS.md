@@ -1,5 +1,26 @@
 # 项目改进记录
 
+## 2026-02-19 - UP 主搜索建议功能
+
+### 新增功能
+
+#### 11. UP 主搜索建议/自动补全
+**功能**：输入 UP 主名字时，自动显示搜索建议列表，类似 B 站原生体验
+**实现细节**：
+- 输入 2 个字符以上触发搜索
+- 300ms 防抖延迟，避免频繁请求
+- 显示 UP 主头像、名字、粉丝数、视频数、签名
+- 点击建议项自动选中并填充
+- 支持直接输入 UID（不触发搜索建议）
+**文件改动**：
+- `BiliSummary/Models/VideoInfo.swift` - 扩展 SearchUserItem 模型
+- `BiliSummary/Services/BilibiliAPI.swift` - 添加 searchUsers 方法
+- `BiliSummary/ViewModels/UserSummaryViewModel.swift` - 添加搜索建议逻辑
+- `BiliSummary/Views/User/UserSummaryView.swift` - 添加建议列表 UI
+- `BiliSummary/Utils/Constants.swift` - 添加搜索相关常量
+
+---
+
 ## 2026-02-19 - P2/P3 问题修复 & 用户体验优化
 
 ### P2 - 中等问题修复

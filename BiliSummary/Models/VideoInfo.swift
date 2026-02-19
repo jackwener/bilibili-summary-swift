@@ -157,12 +157,18 @@ struct SearchResultWrapper: Decodable {
     let result: [SearchUserItem]?
 }
 
-struct SearchUserItem: Decodable {
+struct SearchUserItem: Decodable, Identifiable {
     let mid: Int
     let uname: String
+    let usign: String?
+    let upic: String?
+    let fans: Int?
+    let videos: Int?
+
+    var id: Int { mid }
 
     enum CodingKeys: String, CodingKey {
-        case mid, uname
+        case mid, uname, usign, upic, fans, videos
     }
 
     init(from decoder: Decoder) throws {
@@ -177,5 +183,15 @@ struct SearchUserItem: Decodable {
             throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: [CodingKeys.mid], debugDescription: "Cannot decode mid"))
         }
         self.uname = try container.decode(String.self, forKey: .uname)
+        self.usign = try container.decodeIfPresent(String.self, forKey: .usign)
+        self.upic = try container.decodeIfPresent(String.self, forKey: .upic)
+        self.fans = try container.decodeIfPresent(Int.self, forKey: .fans)
+        self.videos = try container.decodeIfPresent(Int.self, forKey: .videos)
+    }
+
+    var avatarURL: URL? {
+        guard let upic = upic, !upic.isEmpty else { return nil }
+        let urlStr = upic.hasPrefix("//") ? "https:\(upic)" : upic
+        return URL(string: urlStr)
     }
 }
